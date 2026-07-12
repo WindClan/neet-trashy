@@ -1,0 +1,16 @@
+{
+    "entrypoint" : "sys:kernel.lua",
+    "language" : "Lua",
+    "partitions" : [
+        {
+            "path" : "sys",
+            "readonly" : false,
+            "hidden" : false
+        },
+        {
+            "path" : "hdd",
+            "readonly" : false,
+            "hidden" : false
+        }
+    ]
+}
