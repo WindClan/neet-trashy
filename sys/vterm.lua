@@ -1,4 +1,5 @@
--- virtual terminal for neetos
+-- virtual terminal for trashy
+-- since its vital to literally everything the OS does it's not a driver.
 local sizeX1,sizeY1 = screen.getSize()
 local termSizeX, termSizeY = math.floor((sizeX1-1)/20)*20, math.floor((sizeY1-1)/24)*24
 local topX, topY = (sizeX1/2)-(termSizeX/2), (sizeY1/2)-(termSizeY/2)
@@ -15,14 +16,17 @@ local drawChar = import("sys:/font.lua")
 local x,y = 1,1
 local sizeX, sizeY = termSizeX/20, termSizeY/24
 local vterm = {}
-
+function vterm.drawChar(x,y,c)
+    drawChar(topX+((x-1)*20)+1,topY+((y-1)*24)+1,c,220,220,200)
+end
 function vterm.draw()
     screen.fill(1,1,sizeX1,sizeY1,0,0,0)
     for y,v in pairs(termTable) do
         for x,c in pairs(v) do
-            drawChar(topX+((x-1)*20)+1,topY+((y-1)*24)+1,c,220,220,200)
+            vterm.drawChar(x,y,c)
         end
     end
+    screen.draw()
 end
 
 function vterm.setChar(c,x1,y1)
@@ -37,6 +41,8 @@ function vterm.setChar(c,x1,y1)
     end
     if termTable[y1] and termTable[y1][x1] then
         termTable[y1][x1] = c:sub(1,1)
+        vterm.drawChar(x1,y1,c:sub(1,1))
+        screen.draw()
     end
 end
 
@@ -52,12 +58,14 @@ function vterm.write(str)
     for i,v in pairs(split) do
         if termTable[y][x] then
             termTable[y][x] = v
+            vterm.drawChar(x,y,v)
         end
         x = x + 1
     end
     if x > sizeX then
         x = sizeX
     end
+    screen.draw()
 end
 
 function vterm.print(str)
@@ -85,7 +93,6 @@ function vterm.print(str)
         vterm.scroll(1);
     end
     vterm.draw()
-    screen.draw()
 end
 
 function vterm.scroll(i)
@@ -103,6 +110,7 @@ function vterm.scroll(i)
     if y < 1 then
         y = 1;
     end
+    vterm.draw()
 end
 
 return vterm

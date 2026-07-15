@@ -22,10 +22,10 @@ local function import(path)
 end
 _G.import = import
 
---load external APIs
 local vterm = import("sys:vterm.lua")
 
 local function sleep(time)
+    local start = chip.getUnixTime()
     if not time then
        coroutine.yield()
     else
@@ -34,8 +34,8 @@ local function sleep(time)
             coroutine.yield()
         end
     end
+    return chip.getUnixTime()-start
 end
-
 local function input()
     local str = ""
     while true do
@@ -56,6 +56,10 @@ local function input()
     event.clear()
     return str
 end
+
+_G.vterm = vterm
+_G.sleep = sleep
+_G.input = input
 
 --application stack api
 local globalApi = {}
@@ -99,16 +103,24 @@ local function deepCopyTable(oldTab)
     end
     return tab
 end
+_G.table.copy = deepCopyTable
+
+--driver stack
+--TODO: actually implement
+local driverStack = {}
+table.insert(driverStack,coroutine.create(function()
+    while true do
+        vterm.draw()
+        coroutine.yield()
+    end
+end))
 
 --add APIs to userland globals
 globalApi = deepCopyTable(_G)
 globalApi.debug = nil
 globalApi.sleep = sleep
-globalApi.vterm = deepCopyTable(vterm)
 globalApi.print = vterm.print
-globalApi.input = input
 globalApi.launchProgram = launchProgram
-
 
 --start the coroutine loop
 table.insert(coroutineStack,coroutine.create(function()
@@ -118,11 +130,12 @@ table.insert(coroutineStack,coroutine.create(function()
         end
 end))
 launchProgram("sys:/shell.lua")
+
 while true do
     local currentProg = coroutineStack[#coroutineStack]
     if currentProg == nil then
         while true do
-            vterm.print("This REALLY shouldn't happen! Please report this bug to redtoast/NeetComputers!.")
+            vterm.print("This REALLY shouldn't happen! Please report this bug to redtoast/NeetComputers!")
            coroutine.yield()
         end
     else
@@ -130,6 +143,15 @@ while true do
             table.remove(coroutineStack,#coroutineStack)
         elseif coroutine.status(currentProg) == "suspended" then
             coroutine.resume(currentProg)
+        else
+            error("what the fuck")
+        end
+    end
+    for i,v in pairs(driverStack) do
+        if coroutine.status(v) == "dead" then
+            table.remove(driverStack,i)
+        elseif coroutine.status(v) == "suspended" then
+            coroutine.resume(v)
         else
             error("what the fuck")
         end
