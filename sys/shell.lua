@@ -1,3 +1,4 @@
 while true do
-    print(tostring(sleep(1)))
+    vterm.write("HDD:/> ")
+    vterm.print(input())
 end

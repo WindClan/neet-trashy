@@ -50,6 +50,14 @@ function vterm.setCursorPos(x1,y1)
     x,y = x1,y1
 end
 
+function vterm.getCursorPos()
+    return x,y
+end
+
+function vterm.getSize()
+    return sizeX,sizeY
+end
+
 function vterm.write(str)
     local split = {}
     for i=1,#str do
@@ -61,9 +69,6 @@ function vterm.write(str)
             vterm.drawChar(x,y,v)
         end
         x = x + 1
-    end
-    if x > sizeX then
-        x = sizeX
     end
     screen.draw()
 end
