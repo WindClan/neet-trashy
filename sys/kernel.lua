@@ -196,7 +196,7 @@ while true do
         elseif coroutine.status(currentProg) == "suspended" then
             coroutine.resume(currentProg,currentEvent)
         else
-            error("what the fuck")
+            error("Cosmic ray detected in program stack! coroutine:"..coroutine.status(currentProg))
         end
     end
     for i,v in pairs(driverStack) do
@@ -205,7 +205,7 @@ while true do
         elseif coroutine.status(v) == "suspended" then
             coroutine.resume(v,currentEvent)
         else
-            error("what the fuck")
+            error("Cosmic ray detected in driver stack! coroutine:"..coroutine.status(v))
         end
     end
     if #currentEvent == 0 or withoutYield > 99 then
