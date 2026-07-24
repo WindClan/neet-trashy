@@ -4,8 +4,8 @@ local chars = {0,0,0,0,0,2,2,2,0,2,5,5,0,0,0,5,7,5,7,5,7,3,6,7,2,5,4,2,1,5,3,3,3
 local function drawChar(px, py, char, r,g,b)
     local px = math.floor(px/4)
     local py = math.floor(py/4)
-    local color = string.char(r, g, b, 255)
-    local none = string.char(0, 0, 0, 255)
+    local color = string.char(r, g, b, 255):rep(4)
+    local none = string.char(0, 0, 0, 0):rep(4)
     local a = {}
     for y=0,4 do
         local index = 1 + (string.byte(char) - 32) * 5 + y
@@ -13,11 +13,7 @@ local function drawChar(px, py, char, r,g,b)
         for i=1,4 do
             for x=0,2 do
                 local bitchar = math.floor(charn / (2 ^ x)) % 2
-                if bitchar~=0 then
-                    a[#a + 1] = color .. color .. color .. color
-                else
-                    a[#a + 1] = none .. none .. none .. none
-                end
+                a[#a + 1] = bitchar~=0 and color or none
             end
         end
     end
