@@ -12,7 +12,7 @@ local function drawChar(px, py, char, r,g,b)
         local charn = chars[index]
         for i=1,4 do
             for x=0,2 do
-                local bitchar = bit32.band(charn, 2 ^ x)
+                local bitchar = math.floor(charn / (2 ^ x)) % 2
                 if bitchar~=0 then
                     a[#a + 1] = color .. color .. color .. color
                 else
