@@ -74,9 +74,9 @@ function vterm.write(str)
     screen.draw()
 end
 
-function vterm.print(... str1)
+function vterm.print(...)
 	local str = ""
-	for i,v in pairs(str1) do
+	for i,v in pairs({...}) do
 		str ..= tostring(v)
 		if i ~= #str then
 		 str ..= " "

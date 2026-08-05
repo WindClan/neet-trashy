@@ -1,5 +1,5 @@
 --trashy v1
-
+print("Early init started!")
 local sysDisk = ({...})[1] or "hdd" --assume the bootloader was replaced with a braindead vibecoded implementation that can't pass basic arguments
 _G._SYSTEM_DISK = sysDisk
 --minimal version of require that uses exact paths
@@ -24,8 +24,11 @@ local function import(path)
 end
 _G.import = import
 
+print("Loading virtual terminal system...")
 local vterm = import(sysDisk..":/TRASHY/vterm.lua")
+print("Loaded!")
 
+vterm.print("Starting TRASHY...")
 local function sleep(time)
     local start = chip.getUnixTime()
     if not time then
@@ -46,7 +49,7 @@ local function input()
         local n = yield()["user"]
         if n and n[1] == "keyPressed" then
             if n[2] == 13 then
-                vterm.print("")
+                vterm.print()
                 break
             elseif n[2] == 8 then
                 if #str ~= 0 then
@@ -90,7 +93,7 @@ _G.log = print
 local globalApi = {}
 local coroutineStack = {}
 
-local function launchProgram(path,... progargs)
+local function launchProgram(path,...progargs)
     if files.exists(path) then
         local datFile = files.open(path,"r")
         local dat = datFile.read("a")
@@ -130,8 +133,7 @@ local function deepCopyTable(oldTab)
 end
 _G.table.copy = deepCopyTable
 
---driver stack
---TODO: actually implement
+--driverland background tasks
 local driverGlobalApi = {}
 local driverStack = {}
 table.insert(driverStack,coroutine.create(function()
@@ -157,11 +159,31 @@ local function getNextEvent()
     return ret
 end
 
+local function installDriver(path)
+	if files.exists(path) then
+        local datFile = files.open(path,"r")
+        local dat = datFile.read("a")
+        local prog, err = load(dat,path,"t",driverGlobalApi)
+		if prog then
+            local suc,err = pcall(prog)
+			if not err then
+				vterm.print("Failed to start driver "..path.."! Err="..err)
+			end
+        else
+            vterm.print("Failed to load driver "..path.."! Err="..err)
+        end
+	else
+		vterm.print("Failed to load driver "..path.."!")
+	end
+end
+
+print("Reached program-facing API definition")
 --add APIs to userland globals
 globalApi = deepCopyTable(_G)
 globalApi.debug = nil
 globalApi.event = nil
-globalApi.peripheral = nil
+globalApi.io = nil
+globalApi.chip = nil
 globalApi.sleep = sleep
 globalApi.print = vterm.print
 globalApi.launchProgram = launchProgram
@@ -175,9 +197,11 @@ driverGlobalApi.vterm = nil
 driverGlobalApi.sleep = sleep
 driverGlobalApi.launchProgram = launchProgram
 driverGlobalApi._G = driverGlobalApi
+driverGlobalApi._USERLAND = globalApi
 
 --start the coroutine loop
 table.insert(coroutineStack,coroutine.create(function()
+	vterm.print()
 	launchProgram(_SYSTEM_DISK..":/TRASHY/shell.lua","THIS_IS_THE_KERNEL_PLEASE_LAUNCH_THE_SHELL")
     vterm.print("Uh oh! It looks like the shell crashed! This shouldn't happen.")
     vterm.print("Please restart the computer to continue operation.")
@@ -186,18 +210,18 @@ table.insert(coroutineStack,coroutine.create(function()
     end
 end))
 
---for debugging purposes
---while true do
---    sleep()
---    vterm.print("a")
---end
+print("Starting driver system...")
+for _,v in pairs(files.getChildren(_SYSTEM_DISK..":/TRASHY/drivers")) do
+	installDriver(_SYSTEM_DISK..":/TRASHY/drivers/"..v)
+end
+
 local withoutYield = 0
 while true do
     local currentProg = coroutineStack[#coroutineStack]
     local currentEvent = getNextEvent()
     if currentProg == nil then
         while true do
-            chip.crash("This REALLY shouldn't happen! Please report this bug to redtoast/NeetComputers!")
+            error("This REALLY shouldn't happen! Please report this bug to redtoast/NeetComputers!")
         end
     else
         if coroutine.status(currentProg) == "dead" then
@@ -205,7 +229,7 @@ while true do
         elseif coroutine.status(currentProg) == "suspended" then
             coroutine.resume(currentProg,currentEvent)
         else
-            chip.crash("Cosmic ray detected in program stack! coroutine:"..coroutine.status(currentProg))
+            error("Cosmic ray detected in program stack! coroutine:"..coroutine.status(currentProg))
         end
     end
     for i,v in pairs(driverStack) do
@@ -214,7 +238,7 @@ while true do
         elseif coroutine.status(v) == "suspended" then
             coroutine.resume(v,currentEvent)
         else
-            chip.crash("Cosmic ray detected in driver stack! coroutine:"..coroutine.status(v))
+            error("Cosmic ray detected in driver stack! coroutine:"..coroutine.status(v))
         end
     end
     if #currentEvent == 0 or withoutYield > 99 then

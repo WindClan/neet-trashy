@@ -60,6 +60,9 @@ while true do
     local i = input()
 	local sp =  splitToArgs(i)
 	local prog = table.remove(sp,1)
+	if not prog then
+		continue
+	end
 	local progPath = resolveProgramPath(prog:lower())
 	if not progPath then
 		vterm.print("Bad command or filename - "..prog)
@@ -68,5 +71,9 @@ while true do
 		if not suc then
 			vterm.print(err)
 		end
+	end
+	local cursorPos = vterm.getCursorPos()
+	if cursorPos ~= 1 then
+		vterm.print()
 	end
 end
