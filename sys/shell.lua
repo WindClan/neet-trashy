@@ -4,7 +4,7 @@ if not args[1] == "THIS_IS_THE_KERNEL_PLEASE_LAUNCH_THE_SHELL" then
 	return
 end
 
-local currentDisk = "hdd:/"
+local currentDisk = "hdd"
 local currentDir = ""
 
 function _G._getCurrentDisk()
@@ -13,6 +13,7 @@ end
 
 function _G._setCurrentDisk(d)
 	currentDisk = d
+	currentDir = ""
 end
 
 function _G._getCurrentDir()
@@ -42,27 +43,30 @@ local function splitToArgs(i)
 end
 
 local function fileExists(path)
-	if files.exists(path) then
+	if files.isFile(path) then
 		return path
-	elseif files.exists(path..".lua") then
+	elseif files.isFile(path..".lua") then
 		return path..".lua"
 	end
 	return nil
 end
 
 local function resolveProgramPath(path)
-	return fileExists(path) or fileExists("sys:/path/"..path) or fileExists(currentDisk..currentDir..path)
+	return fileExists(path) or fileExists(_SYSTEM_DISK..":/path/"..path) or fileExists(currentDisk..":/"..currentDir..path)
 end
 
 while true do
-    vterm.write("HDD:/> ")
+    vterm.write((currentDisk..":/"..currentDir.."> "):upper())
     local i = input()
 	local sp =  splitToArgs(i)
 	local prog = table.remove(sp,1)
 	local progPath = resolveProgramPath(prog:lower())
 	if not progPath then
-		vterm.print("Program "..prog.." doesn't exist!")
+		vterm.print("Bad command or filename - "..prog)
 	else
-		launchProgram(progPath,table.unpack(sp))
+		local suc, err = pcall(launchProgram,progPath,table.unpack(sp))
+		if not suc then
+			vterm.print(err)
+		end
 	end
 end

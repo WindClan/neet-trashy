@@ -1,5 +1,7 @@
 --trashy v1
 
+local sysDisk = ({...})[1] or "sys" --it is a DOS clone after all, it should support booting from disks if its told to!
+_G._SYSTEM_DISK = sysDisk
 --minimal version of require that uses exact paths
 local function import(path)
     if files.exists(path) then
@@ -22,7 +24,7 @@ local function import(path)
 end
 _G.import = import
 
-local vterm = import("sys:vterm.lua")
+local vterm = import(sysDisk..":/vterm.lua")
 
 local function sleep(time)
     local start = chip.getUnixTime()
@@ -176,7 +178,7 @@ driverGlobalApi._G = driverGlobalApi
 
 --start the coroutine loop
 table.insert(coroutineStack,coroutine.create(function()
-	launchProgram("sys:/shell.lua","THIS_IS_THE_KERNEL_PLEASE_LAUNCH_THE_SHELL")
+	launchProgram(_SYSTEM_DISK..":/shell.lua","THIS_IS_THE_KERNEL_PLEASE_LAUNCH_THE_SHELL")
     vterm.print("Uh oh! It looks like the shell crashed! This shouldn't happen.")
     vterm.print("Please restart the computer to continue operation.")
     while true do
@@ -189,7 +191,6 @@ end))
 --    sleep()
 --    vterm.print("a")
 --end
-
 local withoutYield = 0
 while true do
     local currentProg = coroutineStack[#coroutineStack]

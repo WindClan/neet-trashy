@@ -12,7 +12,7 @@ for i=1,termSizeY/24 do
     table.insert(termTable,a)
 end
 
-local drawChar = import("sys:/font.lua")
+local drawChar = import(_SYSTEM_DISK..":/font.lua")
 local x,y = 1,1
 local sizeX, sizeY = termSizeX/20, termSizeY/24
 local vterm = {}
@@ -74,25 +74,35 @@ function vterm.write(str)
     screen.draw()
 end
 
-function vterm.print(str)
-	str = tostring(str)
+function vterm.print(... str1)
+	local str = ""
+	for i,v in pairs(str1) do
+		str ..= tostring(v)
+		if i ~= #str then
+		 str ..= " "
+		end
+	end
     local split = {}
     for i=1,#str do
         table.insert(split,str:sub(i,i))
     end
     for i,v in pairs(split) do
-        if termTable[y][x] then
-            termTable[y][x] = v
-        end
-        x = x + 1
-        if x > sizeX then
-            y = y + 1
-            x = 1
-            if y > sizeY then
-                y = sizeY
-                vterm.scroll(1);
-            end
-        end
+		if v == "\n" then 
+			x += sizeX*50
+		else
+			if termTable[y][x] then
+				termTable[y][x] = v
+			end
+			x = x + 1
+			if x > sizeX then
+				y = y + 1
+				x = 1
+				if y > sizeY then
+					y = sizeY
+					vterm.scroll(1);
+				end
+			end
+		end
     end
     x = 1
     y = y + 1
