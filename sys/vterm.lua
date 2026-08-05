@@ -3,9 +3,9 @@
 local sizeX1,sizeY1 = screen.getSize()
 local termSizeX, termSizeY = math.floor((sizeX1-1)/20)*20, math.floor((sizeY1-1)/24)*24
 local topX, topY = (sizeX1/2)-(termSizeX/2), (sizeY1/2)-(termSizeY/2)
-local termTable = {}
+local termTable = table.create((termSizeY/24)*(termSizeX/20))
 for i=1,termSizeY/24 do
-    local a = {}
+    local a = table.create(termSizeX/20)
     for i1=1,termSizeX/20 do
         table.insert(a," ")
     end
@@ -59,6 +59,7 @@ function vterm.getSize()
 end
 
 function vterm.write(str)
+	str = tostring(str)
     local split = {}
     for i=1,#str do
         table.insert(split,str:sub(i,i))
@@ -74,6 +75,7 @@ function vterm.write(str)
 end
 
 function vterm.print(str)
+	str = tostring(str)
     local split = {}
     for i=1,#str do
         table.insert(split,str:sub(i,i))
@@ -116,6 +118,18 @@ function vterm.scroll(i)
         y = 1;
     end
     vterm.draw()
+end
+
+function vterm.clear()
+	local newTable = table.create(sizeX*sizeY)
+	for i=1,sizeY do
+		local a = table.create(sizeX)
+		for i1=1,sizeX do
+			table.insert(a," ")
+		end
+		table.insert(newTable,a)
+	end
+	termTable = newTable
 end
 
 return vterm

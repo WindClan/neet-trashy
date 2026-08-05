@@ -88,14 +88,14 @@ _G.log = print
 local globalApi = {}
 local coroutineStack = {}
 
-local function launchProgram(path)
+local function launchProgram(path,... progargs)
     if files.exists(path) then
         local datFile = files.open(path,"r")
         local dat = datFile.read("a")
-        local prog = load(dat,path,"t",globalApi)
+        local prog, err = load(dat,path,"t",globalApi)
         if prog then
             local worked, progFunc = pcall(coroutine.create,function()
-                local success, response = pcall(prog)
+                local success, response = pcall(prog,table.unpack(progargs))
                 if not success then
                     vterm.print("Program exited with an error! Err="..response)
                 end
@@ -106,7 +106,7 @@ local function launchProgram(path)
                 table.insert(coroutineStack,progFunc)
             end
         else
-            error("Failed to load program "..path.."!")
+            error("Failed to load program "..path.."! Err="..err)
         end
     else
         error("File "..path.." does not exist!")
@@ -163,6 +163,7 @@ globalApi.peripheral = nil
 globalApi.sleep = sleep
 globalApi.print = vterm.print
 globalApi.launchProgram = launchProgram
+globalApi._G = globalApi
 
 --add APIs to userland globals
 driverGlobalApi = deepCopyTable(_G)
@@ -171,15 +172,23 @@ driverGlobalApi.event = nil
 driverGlobalApi.vterm = nil
 driverGlobalApi.sleep = sleep
 driverGlobalApi.launchProgram = launchProgram
+driverGlobalApi._G = driverGlobalApi
 
 --start the coroutine loop
 table.insert(coroutineStack,coroutine.create(function()
+	launchProgram("sys:/shell.lua","THIS_IS_THE_KERNEL_PLEASE_LAUNCH_THE_SHELL")
     vterm.print("Uh oh! It looks like the shell crashed! This shouldn't happen.")
-        while true do
-            coroutine.yield()
-        end
+    vterm.print("Please restart the computer to continue operation.")
+    while true do
+        coroutine.yield()
+    end
 end))
-launchProgram("sys:/shell.lua")
+
+--for debugging purposes
+--while true do
+--    sleep()
+--    vterm.print("a")
+--end
 
 local withoutYield = 0
 while true do
@@ -187,8 +196,7 @@ while true do
     local currentEvent = getNextEvent()
     if currentProg == nil then
         while true do
-            vterm.print("This REALLY shouldn't happen! Please report this bug to redtoast/NeetComputers!")
-           coroutine.yield()
+            chip.crash("This REALLY shouldn't happen! Please report this bug to redtoast/NeetComputers!")
         end
     else
         if coroutine.status(currentProg) == "dead" then
@@ -196,7 +204,7 @@ while true do
         elseif coroutine.status(currentProg) == "suspended" then
             coroutine.resume(currentProg,currentEvent)
         else
-            error("Cosmic ray detected in program stack! coroutine:"..coroutine.status(currentProg))
+            chip.crash("Cosmic ray detected in program stack! coroutine:"..coroutine.status(currentProg))
         end
     end
     for i,v in pairs(driverStack) do
@@ -205,7 +213,7 @@ while true do
         elseif coroutine.status(v) == "suspended" then
             coroutine.resume(v,currentEvent)
         else
-            error("Cosmic ray detected in driver stack! coroutine:"..coroutine.status(v))
+            chip.crash("Cosmic ray detected in driver stack! coroutine:"..coroutine.status(v))
         end
     end
     if #currentEvent == 0 or withoutYield > 99 then
