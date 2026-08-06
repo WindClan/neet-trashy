@@ -182,7 +182,6 @@ print("Reached program-facing API definition")
 globalApi = deepCopyTable(_G)
 globalApi.debug = nil
 globalApi.event = nil
-globalApi.io = nil
 globalApi.chip = nil
 globalApi.sleep = sleep
 globalApi.print = vterm.print
