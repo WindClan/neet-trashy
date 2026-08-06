@@ -1,7 +1,9 @@
 --trashy v1
+
 print("Early init started!")
 local sysDisk = ({...})[1] or "hdd" --assume the bootloader was replaced with a braindead vibecoded implementation that can't pass basic arguments
 _G._SYSTEM_DISK = sysDisk
+
 --minimal version of require that uses exact paths
 local function import(path)
     if files.exists(path) then
@@ -23,6 +25,62 @@ local function import(path)
     end
 end
 _G.import = import
+
+--this was defined in the shell previously but we need it here for our files shim
+local function splitStr(i, sep)
+	local split = {} --for some ungodly reason gsub didn't find any matches. this is the hack to get around that
+	local last = ""
+	for l=1,#i do
+		local let = i:sub(l,l)
+		if let == sep then
+			table.insert(split,last)
+			last = ""
+		else
+			last ..= let
+		end
+	end
+	if last ~= "" then
+		table.insert(split,last)
+	end
+	return split
+end
+_G.string.split = splitStr
+
+--for neato compliant bootloader support we need neato compliant filesystem support
+local oldFiles = files
+local newFiles = {}
+local newFilesMeta = {}
+local threeArgFunc = {
+	["open"] = true,
+	["setPartitionHidden"] = true
+}
+newFilesMeta.__index = function(_,k)
+	if not oldFiles[k] then
+		return nil
+	end
+	return function(...)
+		local v = {...}
+		if v[1] and type(v[1]) == "string" then
+			local s = v[1]:split(":")
+			if #s == 3 then
+				v[1] = s[2]..":"..s[3]
+				if threeArgFunc[k] then
+					v[3] = tonumber(s[1])
+				else
+					v[2] = tonumber(s[1])
+				end
+			end
+		end
+		local suc,err = pcall(oldFiles[k],table.unpack(v))
+		if not suc then 
+			error(err,2)
+		else
+			return err
+		end
+	end
+end
+setmetatable(newFiles,newFilesMeta)
+_G.files = newFiles
 
 print("Loading virtual terminal system...")
 local vterm = import(sysDisk..":/TRASHY/vterm.lua")
@@ -129,6 +187,7 @@ local function deepCopyTable(oldTab)
             tab[i] = deepCopyTable(v)
         end
     end
+	setmetatable(tab,getmetatable(oldTab))
     return tab
 end
 _G.table.copy = deepCopyTable

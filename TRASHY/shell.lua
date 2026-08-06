@@ -4,7 +4,7 @@ if not args[1] == "THIS_IS_THE_KERNEL_PLEASE_LAUNCH_THE_SHELL" then
 	return
 end
 
-local currentDisk = "hdd"
+local currentDisk = _SYSTEM_DISK
 local currentDir = ""
 
 function _G._getCurrentDisk()
@@ -24,24 +24,6 @@ function _G._setCurrentDir(d)
 	currentDir = d
 end
 
-local function splitToArgs(i)
-	local split = {} --for some ungodly reason gsub didn't find any matches. this is the hack to get around that
-	local last = ""
-	for l=1,#i do
-		local let = i:sub(l,l)
-		if let == " " then
-			table.insert(split,last)
-			last = ""
-		else
-			last ..= let
-		end
-	end
-	if last ~= "" then
-		table.insert(split,last)
-	end
-	return split
-end
-
 local function fileExists(path)
 	if files.isFile(path) then
 		return path
@@ -58,7 +40,7 @@ end
 while true do
     vterm.write((currentDisk..":/"..currentDir.."> "):upper())
     local i = input()
-	local sp =  splitToArgs(i)
+	local sp =  i:split(" ")
 	local prog = table.remove(sp,1)
 	if not prog then
 		continue
